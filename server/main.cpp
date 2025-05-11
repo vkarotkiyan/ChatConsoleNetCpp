@@ -1,5 +1,3 @@
-#include "netserver.h"
-#include "misc.h"
 #include "chatserver.h"
 
 using namespace std;

@@ -1,4 +1,3 @@
-#include "net.h"
 #include "chatclient.h"
 using namespace std;
 
