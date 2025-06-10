@@ -1,13 +1,12 @@
-#include <filesystem>
-#include <fstream>
 #include "chatclient.h"
 #ifdef max
 #undef max
 #endif
 using namespace std;
 
-ChatClient::ChatClient(string ip, int port) { 
-	net = new NetClient(ip, port);
+ChatClient::ChatClient() {
+	vector<string> config = readConfig();
+	net = new NetClient(config[0], stoi(config[1]));
 	net->start();
 	m_isWork = true; 
 }
@@ -65,9 +64,10 @@ void ChatClient::login() {
 		cin >> login;
 		cout << "Пароль: ";
 		cin >> password;
+		string passHash = to_string(*sha1(password.c_str(), password.length()));
 		net->sendMsg(code);
 		net->sendMsg(login);
-		net->sendMsg(password);
+		net->sendMsg(passHash);
 		if (net->getMsg() == "true")
 			m_currentUser = getUserByLogin(login);
 		else {
@@ -88,14 +88,26 @@ void ChatClient::signUp() { // Регистрация пользователя
 	clear_screen();
 	cout << "Логин: ";
 	cin >> login;
+	cp1251toUtf8(login);
+	while (!сhесkUserInput(login)) {
+		cin >> login;
+		cp1251toUtf8(login);
+	}
 	cout << "Пароль: ";
 	cin >> password;
+	cp1251toUtf8(password);
+	while (!сhесkUserInput(password)) {
+		cin >> password;
+		cp1251toUtf8(password);
+	}
 	cout << "Имя: ";
-	cin >> name;
+	cin.ignore(numeric_limits<streamsize>::max(), '\n');
+	getline(cin, name);
 	cp1251toUtf8(name);
+	string passHash = to_string(*sha1(password.c_str(), password.length()));
 	net->sendMsg(code);
 	net->sendMsg(login);
-	net->sendMsg(password);
+	net->sendMsg(passHash);
 	net->sendMsg(name);
 	if (net->getMsg() == "success") {
 		re_readChat();
@@ -170,16 +182,23 @@ void ChatClient::userMenu() {
 	}
 }
 
+std::shared_ptr<User> ChatClient::getUserById(const int& id) const {
+	for (auto& user : m_users) {
+		if (id == user->getUserId()) return user; 
+	}
+	return nullptr;
+}
+
 shared_ptr<User> ChatClient::getUserByLogin(const string& login) const {
 	for (auto& user : m_users) {
-		if (login == user->getUserLogin()) return user; // Исправлено по рекомендации проверяющего
+		if (login == user->getUserLogin()) return user; 
 	}
 	return nullptr;
 }
 
 shared_ptr<User> ChatClient::getUserByName(const string& name) const {
 	for (auto& user : m_users) {
-		if (name == user->getUserName()) return user; // Исправлено по рекомендации проверяющего
+		if (name == user->getUserName()) return user; 
 	}
 	return nullptr;
 }
@@ -207,8 +226,8 @@ void ChatClient::setUserForChat() {
 
 void ChatClient::addMessage() {
 	string text;
-	string from = m_currentUser->getUserLogin();
-	string to = (m_userForChat) ? m_userForChat->getUserLogin() : "all";
+	string from = to_string(m_currentUser->getUserId());
+	string to = (m_userForChat) ? to_string(m_userForChat->getUserId()) : "0";
 	string code = to_string(RequestAPI::AddMessage);
 	cout << ">> ";
 	cin.ignore(numeric_limits<streamsize>::max(), '\n');
@@ -231,18 +250,18 @@ void ChatClient::showChat() const { // Вывод списка сообщени�
 		cout << "------------------------- Чат с пользователем " << m_userForChat->getUserName() << " ------------------------" << endl;
 	for (auto& mess : m_messages) {
 		if (!m_userForChat) {
-			if (mess.getTo() == "all") {
-				if (mess.getFrom() == m_currentUser->getUserLogin()) cout << "          ";
-				cout << showTime(mess.getTime()) << " " << getUserByLogin(mess.getFrom())->getUserName()
+			if (mess.getTo() == 0) {
+				if (mess.getFrom() == m_currentUser->getUserId()) cout << "          ";
+				cout << showTime(mess.getTime()) << " " << getUserById(mess.getFrom())->getUserName()
 					<< ": " << mess.getText() << endl;
 			}
 		}
 		else {
-			if ((mess.getFrom() == m_currentUser->getUserLogin() && mess.getTo() == m_userForChat->getUserLogin()) ||
-				(mess.getFrom() == m_userForChat->getUserLogin() && mess.getTo() == m_currentUser->getUserLogin()))
+			if ((mess.getFrom() == m_currentUser->getUserId() && mess.getTo() == m_userForChat->getUserId()) ||
+				(mess.getFrom() == m_userForChat->getUserId() && mess.getTo() == m_currentUser->getUserId()))
 			{
-				if (m_currentUser->getUserLogin() == mess.getFrom()) cout << "          ";
-				cout << showTime(mess.getTime()) << " " << getUserByLogin(mess.getFrom())->getUserName()
+				if (m_currentUser->getUserId() == mess.getFrom()) cout << "          ";
+				cout << showTime(mess.getTime()) << " " << getUserById(mess.getFrom())->getUserName()
 					<< ": " << mess.getText() << endl;
 			}
 		}
@@ -250,84 +269,64 @@ void ChatClient::showChat() const { // Вывод списка сообщени�
 	cout << "---------------------------------------------------------------------------" << endl;
 }
 
-void ChatClient::readChat() { // Чтение двнных чата из файлов
-	fstream user_file_r = fstream(pathFile(U_FILE), ios::in); // Заполняем пользователей
-	if (user_file_r.is_open()) {
-		const string delimiter = "::";
-		string str, login, password, name;
-		while (getline(user_file_r, str)) {
-			size_t end = str.find(delimiter);
-			login = str.substr(0, end);
-			str.erase(str.begin(), str.begin() + end + 2);
-			end = str.find(delimiter);
-			password = str.substr(0, end);
-			name = str.substr(end + 2);
-			shared_ptr<User> user(new User(login, password, name));
-			m_users.push_back(user);
-		}
+void ChatClient::readChat() { // Чтение данных чата из базы
+	int id, status, from, to;
+	string text, login, password, name;
+	time_t time;
+	int num_rows = 0;
+	string code = to_string(RequestAPI::ReadChat);
+	net->sendMsg(code);
+	num_rows = stoi(net->getMsg());
+	for (int i = 0; i < num_rows; i++) {
+		id = stoi(net->getMsg());
+		login = net->getMsg();
+		password = net->getMsg();
+		name = net->getMsg();
+		status = stoi(net->getMsg());
+		shared_ptr<User> user(new User(id, login, password, name, status));
+		m_users.push_back(user);
 	}
-	user_file_r.close();
-
-	fstream message_file_r = fstream(pathFile(M_FILE), ios::in); // Заполняем сообщения
-	if (message_file_r.is_open()) {
-		const string delimiter = "::";
-		string str, from, to, text;
-		time_t time;
-		while (getline(message_file_r, str)) {
-			size_t end = str.find(delimiter);
-			time = stoll(str.substr(0, end));
-			str.erase(str.begin(), str.begin() + end + 2);
-			end = str.find(delimiter);
-			from = str.substr(0, end);
-			str.erase(str.begin(), str.begin() + end + 2);
-			end = str.find(delimiter);
-			to = str.substr(0, end);
-			text = str.substr(end + 2);
-			m_messages.push_back(Message{ text, from, to, time });
-		}
+	num_rows = stoi(net->getMsg());
+	for (int i = 0; i < num_rows; i++) {
+		id = stoi(net->getMsg());
+		text = net->getMsg();
+		from = stoi(net->getMsg());
+		to = stoi(net->getMsg());
+		status = stoi(net->getMsg());
+		time = stoll(net->getMsg());
+		m_messages.push_back(Message{ id, text, from, to, status, time });
 	}
-	message_file_r.close();
 }
 
 void ChatClient::re_readChat() {
-	fstream user_file_r = fstream(pathFile(U_FILE), ios::in); // Заполняем пользователей
-	if (user_file_r.is_open()) {
-		const string delimiter = "::";
-		string str, login, password, name;
-		m_users.clear();
-		while (getline(user_file_r, str)) {
-			size_t end = str.find(delimiter);
-			login = str.substr(0, end);
-			str.erase(str.begin(), str.begin() + end + 2);
-			end = str.find(delimiter);
-			password = str.substr(0, end);
-			name = str.substr(end + 2);
-			shared_ptr<User> user(new User(login, password, name));
-			m_users.push_back(user);
-		}
+	int id, status, from, to;
+	string text, login, password, name;
+	time_t time;
+	int num_rows = 0;
+	m_users.clear();
+	m_messages.clear();
+	string code = to_string(RequestAPI::ReadChat);
+	net->sendMsg(code);
+	num_rows = stoi(net->getMsg());
+	for (int i = 0; i < num_rows; i++) {
+		id = stoi(net->getMsg());
+		login = net->getMsg();
+		password = net->getMsg();
+		name = net->getMsg();
+		status = stoi(net->getMsg());
+		shared_ptr<User> user(new User(id, login, password, name, status));
+		m_users.push_back(user);
 	}
-	user_file_r.close();
-
-	fstream message_file_r = fstream(pathFile(M_FILE), ios::in); // Заполняем сообщения
-	if (message_file_r.is_open()) {
-		const string delimiter = "::";
-		string str, from, to, text;
-		time_t time;
-		m_messages.clear();
-		while (getline(message_file_r, str)) {
-			size_t end = str.find(delimiter);
-			time = stoll(str.substr(0, end));
-			str.erase(str.begin(), str.begin() + end + 2);
-			end = str.find(delimiter);
-			from = str.substr(0, end);
-			str.erase(str.begin(), str.begin() + end + 2);
-			end = str.find(delimiter);
-			to = str.substr(0, end);
-			text = str.substr(end + 2);
-			m_messages.push_back(Message{ text, from, to, time });
-		}
+	num_rows = stoi(net->getMsg());
+	for (int i = 0; i < num_rows; i++) {
+		id = stoi(net->getMsg());
+		text = net->getMsg();
+		from = stoi(net->getMsg());
+		to = stoi(net->getMsg());
+		status = stoi(net->getMsg());
+		time = stoll(net->getMsg());
+		m_messages.push_back(Message{ id, text, from, to, status, time });
 	}
-	message_file_r.close();
 }
 
 void ChatClient::ServerExit() {

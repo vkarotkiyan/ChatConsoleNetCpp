@@ -58,7 +58,8 @@ void NetServer::start() {
 }
 
 #if defined(_WIN64) || defined(_WIN32)
-void NetServer::sendMsg(std::string msg, SOCKET newConnect) {
+
+void NetServer::sendMsg(string msg, SOCKET newConnect) {
 	int packet_size;
 	int msg_size = msg.size();
 	packet_size = send(newConnect, (char*)&msg_size, sizeof(int), 0);
@@ -75,7 +76,7 @@ void NetServer::sendMsg(std::string msg, SOCKET newConnect) {
 	}
 }
 
-std::string NetServer::getMsg(SOCKET newConnect) {
+string NetServer::getMsg(SOCKET newConnect) {
 	int packet_size;
 	int msg_size(0);
 	string msg = "";
@@ -111,7 +112,8 @@ SOCKET NetServer::acception() {
 }
 
 #elif defined (__linux__)
-void NetServer::sendMsg(std::string msg, int newConnect) {
+
+void NetServer::sendMsg(string msg, int newConnect) {
 	int packet_size;
 	int msg_size = msg.size();
 	packet_size = send(newConnect, (char*)&msg_size, sizeof(int), 0);
@@ -128,7 +130,7 @@ void NetServer::sendMsg(std::string msg, int newConnect) {
 	}
 }
 
-std::string NetServer::getMsg(int newConnect) {
+string NetServer::getMsg(int newConnect) {
 	int packet_size;
 	int msg_size(0);
 	string msg = "";
@@ -164,6 +166,7 @@ void NetServer::acception() {
 int NetServer::getConnect() {
 	return m_connection;
 }
+
 #endif
 
 void NetServer::Exit() {

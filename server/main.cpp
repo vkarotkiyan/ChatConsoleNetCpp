@@ -7,13 +7,11 @@ int main(int argc, char* argv[]) {
 	clear_screen();
 	info();
 
-	ChatServer* chatServer = new ChatServer("127.0.0.1", 7777);
+	ChatServer* chatServer = new ChatServer();
 
-	chatServer->readChat();
 	while (chatServer->isWork()) {
 		chatServer->initChat();
 	}
-	chatServer->writeChat();
 
 	delete chatServer;
 	return 0;

@@ -3,7 +3,10 @@
 #include <exception>
 #include <cstdlib>
 #include <string>
+#include <vector>
 #include <locale>
+#include <filesystem>
+#include <fstream>
 #if defined(_WIN64) || defined(_WIN32)
 #include <windows.h>
 #include <io.h>
@@ -12,10 +15,13 @@
 #elif defined(__linux__)
 #include <unistd.h>
 #endif
-constexpr auto U_FILE = "users.txt";
-constexpr auto M_FILE = "messages.txt";
+
+using std::string;
+
+constexpr auto C_FILE = "config_client.ini";
 
 enum RequestAPI {
+	ReadChat,
 	Registration,
 	Login,
 	AddMessage,
@@ -23,23 +29,23 @@ enum RequestAPI {
 	ServerExit
 };
 
-// Настройка консоли для Windows и Linux
-void set_cons();
+void set_cons(); // Настройка консоли для Windows и Linux
 
-// Очистка экрана консоли
-void clear_screen();
+void clear_screen(); // Очистка экрана консоли
 
-// Вычисление домашнего каталога + имя файла
-std::string pathFile(const char* file);
+std::string pathFile(const char* file); // Вычисление домашнего каталога + имя файла
 
-// Информация об ОС и процессе
-void info();
+void info(); // Информация об ОС и процессе
 
-// Отображение времени в правильном формате
-std::string showTime(const time_t&);
+std::string showTime(const time_t&); // Отображение времени в правильном формате
 
-// Перекодировка строки для Windows
-void cp1251toUtf8(std::string&);
+void cp1251toUtf8(std::string&); // Перекодировка строки для Windows
+
+bool сhесkUserInput(std::string& str); // Проверка пользовательского ввода
+
+std::vector<std::string> readConfig(); // Чтение и сохранение конфига
+void writeConfig();
+std::string readConfigValue(std::string value);
 
 // Exceptions /////////////////////////////////////////////////////////////////
 

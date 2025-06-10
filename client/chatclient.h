@@ -5,10 +5,11 @@
 #include "message.h"
 #include "net.h"
 #include "misc.h"
+#include "sha1.h"
 
 class ChatClient {
 public:
-	ChatClient(std::string ip, int port);
+	ChatClient();
 	~ChatClient();
 	bool isWork() const;
 	void initMenu(); // Начальное меню
@@ -16,6 +17,7 @@ public:
 	void signUp(); // Регистрация пользователя
 	void showUserList() const; // Отображение списка пользователей
 	void userMenu(); // Меню авторизованного пользователя
+	std::shared_ptr<User> getUserById(const int&) const;
 	std::shared_ptr<User> getUserByLogin(const std::string&) const;
 	std::shared_ptr<User> getUserByName(const std::string&) const;
 	std::shared_ptr<User> getCurrentUser() const;

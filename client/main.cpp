@@ -6,7 +6,7 @@ int main(int argc, char* argv[]) {
 	clear_screen();
 	info();
 
-	ChatClient* chatClient = new ChatClient("127.0.0.1", 7777);
+	ChatClient* chatClient = new ChatClient();
 	chatClient->readChat();
 	while (chatClient->isWork()) {
 		chatClient->initMenu();

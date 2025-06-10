@@ -1,6 +1,7 @@
 #pragma once
 #include <iostream> 
-#include <string> 
+#include <string>
+#include <vector>
 #if defined (_WIN64) || defined(_WIN32)
 #include <WS2tcpip.h>
 #include <winsock2.h>

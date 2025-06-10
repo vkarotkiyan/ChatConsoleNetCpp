@@ -8,10 +8,12 @@
 #include "user.h"
 #include "message.h"
 #include "misc.h"
+#include "db.h"
+#include "db_Interface.h"
 
 class ChatServer {
 public:
-	ChatServer(std::string ip, int port);
+	ChatServer();
 	~ChatServer();
 	bool isWork() const;
 	void initChat();
@@ -23,23 +25,26 @@ public:
 	void CloseClient(SOCKET newSocket);
 	void signUp(SOCKET newSock); // Регистрация пользователя
 	void addMessage(SOCKET newSocket); // Ввод сообщения
+	void readChatFromDB(SOCKET newSocket);
 #elif defined (__linux__)
 	void clientHandler(int newConnect);
 	void login(int newConnect); // Аутентификация пользователя
 	void CloseClient(int newConnect);
 	void signUp(int newConnect); // Регистрация пользователя
 	void addMessage(int newConnect); // Ввод сообщения
+	void readChatFromDB(int newConnect);
 #endif
 	void showUserList() const; // Отображение списка пользователей
+	std::shared_ptr<User> getUserById(const int&) const;
 	std::shared_ptr<User> getUserByLogin(const std::string&) const;
 	std::shared_ptr<User> getUserByName(const std::string&) const;
 	//std::shared_ptr<User> getCurrentUser() const;
 	//std::shared_ptr<User> getUserForChat() const;
-	void writeChat();
-	void readChat();
+	//void writeChat();
 private:
 	bool m_isWork = false;
 	NetServer *net;
+	DB* db;
 	//std::list<SOCKET> connect_list;
 	std::vector<std::shared_ptr<User>> m_users; // Массив пользователей
 	std::vector<Message> m_messages; // Массив сообщений

@@ -3,7 +3,10 @@
 #include <exception>
 #include <cstdlib>
 #include <string>
+#include <vector>
 #include <locale>
+#include <filesystem>
+#include <fstream>
 #if defined(_WIN64) || defined(_WIN32)
 #include <windows.h>
 #include <io.h>
@@ -12,10 +15,13 @@
 #elif defined(__linux__)
 #include <unistd.h>
 #endif
-constexpr auto U_FILE = "users.txt";
-constexpr auto M_FILE = "messages.txt";
+
+using std::string;
+
+constexpr auto C_FILE = "config_server.ini";
 
 enum RequestAPI {
+	ReadChat,
 	Registration,
 	Login,
 	AddMessage,
@@ -40,6 +46,11 @@ std::string showTime(const time_t&);
 
 // Перекодировка строки для Windows
 void cp1251toUtf8(std::string&);
+
+// Чтение и сохранение конфига
+std::vector<std::string> readConfig();
+void writeConfig();
+std::string readConfigValue(std::string value);
 
 // Exceptions /////////////////////////////////////////////////////////////////
 

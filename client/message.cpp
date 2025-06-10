@@ -1,23 +1,24 @@
 #include "message.h"
 using namespace  std;
 
-Message::Message(const string& text, const string& from, const string& to, const time_t& dateTime) :
-    m_text(text), m_from(from), m_to(to), m_dateTime(dateTime) {
+Message::Message(const int& id, const string& text, const int& from, const int& to, const int& status, const time_t& dateTime) :
+    m_id(id), m_text(text), m_from(from), m_to(to), m_status(status), m_dateTime(dateTime) {
 }
-
+const int& Message::getId() const {
+    return m_id;
+}
 const string& Message::getText() const {
     return m_text;
 }
-
-const string& Message::getFrom() const {
+const int& Message::getFrom() const {
     return m_from;
 }
-
-const string& Message::getTo() const {
+const int& Message::getTo() const {
     return m_to;
 }
-
-const std::time_t& Message::getTime() const
-{
+const int& Message::getStatus() const {
+    return m_status;
+}
+const std::time_t& Message::getTime() const {
     return m_dateTime;
 }
