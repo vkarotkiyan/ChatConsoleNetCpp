@@ -107,7 +107,7 @@ vector<string> readConfig() {
 		config.push_back("3306");
 		config.push_back("chatdb");
 		config.push_back("root");
-		config.push_back("Victk0r$");
+		config.push_back("root");
 		config.push_back("mysqlapi");
 		writeConfig();
 	}
@@ -121,7 +121,7 @@ void writeConfig() {
 	string mysql_server_port = "3306";
 	string mysql_database = "chatdb";
 	string mysql_login = "root";
-	string mysql_password = "Victk0r$";
+	string mysql_password = "root";
 	string db_interface = "mysqlapi";
 	fstream config_file_wr = fstream(pathFile(C_FILE), ios::out);
 	if (!config_file_wr.is_open()) {
